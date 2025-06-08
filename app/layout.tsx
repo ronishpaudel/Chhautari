@@ -9,7 +9,7 @@ import { AuthProvider } from "@/components/auth-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Chhautari - Your Neighborhood Community",
+  title: "Chautari - Your Neighborhood Community",
   description:
     "Connect with your neighbors, find local services, and build stronger communities",
   generator: "v0.dev",
