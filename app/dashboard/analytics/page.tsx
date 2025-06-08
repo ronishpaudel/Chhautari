@@ -13,7 +13,7 @@ export default async function AnalyticsPage() {
 
   // // Check if user has admin/moderator role
   // if (
-  //   session.user.role !== "ADMIN" &&
+  //   session.upsrole !== "ADMIN" &&
   //   session.user.role !== "SERVICE_PROVIDER"
   // ) {
   //   redirect("/dashboard");

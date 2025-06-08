@@ -95,7 +95,7 @@ export default function SignInPage() {
             </div>
             <CardTitle className="text-2xl">Welcome back</CardTitle>
             <CardDescription>
-              Sign in to your Chhautari account to connect with your community
+              Sign in to your Chautari account to connect with your community
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
