@@ -1,8 +1,7 @@
 "use client";
 
 import type React from "react";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,80 +15,159 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Mail,
   Chrome,
   ArrowLeft,
   MapPin,
   TreeDeciduousIcon,
+  Loader2,
+  Navigation,
 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 
-const neighborhoods = [
-  "Khajura",
-  "Koreanpur",
-  "Karkado",
-  "Dhambojhi",
-  "Kohalpur",
-  "Nepalgunj",
-];
+interface LocationData {
+  city?: string;
+  district?: string;
+  state?: string;
+  country?: string;
+  neighborhood?: string;
+  formattedLocation?: string;
+}
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState<LocationData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
-  const handleEmailSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!location) {
+  // Function to get user's current location
+  const getCurrentLocation = async () => {
+    setIsGettingLocation(true);
+
+    if (!navigator.geolocation) {
       toast({
-        title: "Location required",
-        description: "Please select your neighborhood to continue.",
+        title: "Geolocation not supported",
+        description: "Your browser does not support geolocation.",
         variant: "destructive",
       });
+      setIsGettingLocation(false);
+      return;
+    }
+
+    try {
+      const position = await new Promise<GeolocationPosition>(
+        (resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000,
+          });
+        }
+      );
+
+      const { latitude, longitude } = position.coords;
+
+      // Reverse geocoding using a free API
+      const response = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const locationData: LocationData = {
+          city: data.city,
+          district: data.localityInfo?.administrative?.[2]?.name,
+          state: data.principalSubdivision,
+          country: data.countryName,
+          neighborhood: data.locality,
+          formattedLocation: `${data.locality || data.city}, ${
+            data.principalSubdivision
+          }, ${data.countryName}`,
+        };
+
+        setLocation(locationData);
+
+        toast({
+          title: "Location detected",
+          description: locationData.formattedLocation,
+        });
+      } else {
+        throw new Error("Failed to fetch location data");
+      }
+    } catch (error) {
+      toast({
+        title: "Could not get location",
+        description:
+          "Please try again or ensure location services are enabled.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGettingLocation(false);
+    }
+  };
+
+  // Automatically attempt to get location on component mount
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!name.trim()) {
+      toast({ title: "Name required", variant: "destructive" });
+      return;
+    }
+    if (!location?.formattedLocation) {
+      toast({ title: "Location required", variant: "destructive" });
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Store signup data in localStorage to use after email verification
-      localStorage.setItem("signupData", JSON.stringify({ name, location }));
+      // 1. Upsert user with name and location BEFORE signIn
+      const response = await fetch("/api/create-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          name,
+          location: location.formattedLocation,
+        }),
+      });
 
+      console.log({ response });
+
+      // 2. Now trigger magic link email sign-in
       const result = await signIn("email", {
         email,
         redirect: false,
+        callbackUrl: "/dashboard",
       });
 
       if (result?.error) {
         toast({
           title: "Error",
-          description: "Failed to send sign-up email. Please try again.",
+          description: "Failed to send sign-up email.",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Check your email",
-          description:
-            "We sent you a sign-up link. Be sure to check your spam too.",
+          description: "We sent you a sign-up link.",
         });
-        router.push("/");
       }
     } catch (error) {
+      console.error(error);
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: "Something went wrong.",
         variant: "destructive",
       });
     } finally {
@@ -98,15 +176,50 @@ export default function SignUpPage() {
   };
 
   const handleGoogleSignUp = async () => {
+    if (!name.trim()) {
+      toast({
+        title: "Name required",
+        description: "Please enter your full name.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!location?.formattedLocation) {
+      toast({
+        title: "Location required",
+        description: "Please detect your location to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
+
     try {
-      await signIn("google", { callbackUrl: "/onboarding" });
+      const result = await signIn("google", {
+        email,
+        name,
+        location: location.formattedLocation,
+        redirect: false,
+        callbackUrl: "/dashboard",
+      });
+
+      console.log("Google signIn result:", result); // Debugging
+      if (result?.error) {
+        toast({
+          title: "Error",
+          description: "Failed to sign up with Google. Please try again.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
+      console.error("Google signIn error:", error);
       toast({
         title: "Error",
         description: "Failed to sign up with Google. Please try again.",
         variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -126,11 +239,9 @@ export default function SignUpPage() {
         <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="text-center">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <span className="text-white font-bold">
-                <TreeDeciduousIcon className="h-5 w-5" />
-              </span>
+              <TreeDeciduousIcon className="h-5 w-5 text-white" />
             </div>
-            <CardTitle className="text-2xl">Join Chhautari</CardTitle>
+            <CardTitle className="text-2xl">Join Chautari</CardTitle>
             <CardDescription>
               Create your account and connect with your neighborhood community
             </CardDescription>
@@ -183,24 +294,31 @@ export default function SignUpPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Your Neighborhood (Tol)</Label>
-                <Select value={location} onValueChange={setLocation} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your neighborhood">
-                      <div className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-2" />
-                        {location || "Select your neighborhood"}
-                      </div>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {neighborhoods.map((neighborhood) => (
-                      <SelectItem key={neighborhood} value={neighborhood}>
-                        {neighborhood}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center justify-between">
+                  <Label>Your Location</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={getCurrentLocation}
+                    disabled={isGettingLocation}
+                    className="text-xs"
+                  >
+                    {isGettingLocation ? (
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <Navigation className="w-3 h-3 mr-1" />
+                    )}
+                    {isGettingLocation ? "Getting..." : "Detect Location"}
+                  </Button>
+                </div>
+
+                {location?.formattedLocation && (
+                  <div className="text-xs text-muted-foreground bg-muted p-2 rounded flex items-center">
+                    <MapPin className="w-4 h-4 mr-2" />
+                    {location.formattedLocation}
+                  </div>
+                )}
               </div>
 
               <Button type="submit" disabled={isLoading} className="w-full">
