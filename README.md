@@ -1,6 +1,6 @@
-# Chhautari
+# Chautari
 
-**Chhautari** is a community-centric platform inspired by the traditional Nepali rest stops — places where neighbours meet, share stories, and help one another.
+**Chautari** is a community-centric platform inspired by the traditional Nepali rest stops — places where neighbours meet, share stories, and help one another.
 
 This app brings that spirit online, offering a digital space for residents and service providers within a neighborhood to **post local updates, share job opportunities, vote in polls, and foster real connections**.
 
