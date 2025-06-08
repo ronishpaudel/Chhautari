@@ -22,7 +22,7 @@ model User {
   image         String?
   phone         String?
   bio           String?
-  location      String? // tol/neighborhood
+  location      String? // tole/neighborhood
   role          UserRole  @default(RESIDENT)
   isVerified    Boolean   @default(false)
   createdAt     DateTime  @default(now())
