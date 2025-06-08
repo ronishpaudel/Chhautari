@@ -1,222 +1,373 @@
-"use client"
+// Enhanced FeedSection component with separate UI for different post types
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Heart, MessageCircle, Share2, MapPin, Clock, Plus, Briefcase, Vote, Users } from "lucide-react"
+import React, { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Loader2,
+  MoreHorizontal,
+  Heart,
+  MessageCircle,
+  Share2,
+  MapPin,
+  Clock,
+  Eye,
+  Star,
+  Users,
+  Vote,
+  Sparkles,
+  Briefcase,
+  DollarSign,
+  Calendar,
+  TrendingUp,
+  CheckCircle,
+} from "lucide-react";
 
-// Mock data for demonstration
-const feedPosts = [
-  {
-    id: 1,
-    type: "post",
-    author: {
-      name: "Rajesh Sharma",
-      avatar: "/placeholder.svg?height=40&width=40",
-      location: "Thamel",
-      isVerified: true,
-    },
-    content:
-      "Looking for recommendations for a good electrician in our area. Need some wiring work done urgently. Any suggestions?",
-    timestamp: "2 hours ago",
-    likes: 12,
-    comments: 5,
-    category: "HELP_REQUEST",
-  },
-  {
-    id: 2,
-    type: "job",
-    author: {
-      name: "Sita Poudel",
-      avatar: "/placeholder.svg?height=40&width=40",
-      location: "Patan",
-      isVerified: false,
-    },
-    title: "Need Math Tutor for Grade 10",
-    content:
-      "Looking for an experienced math tutor for my daughter. Preferably someone who can come home 3 times a week.",
-    budget: 5000,
-    timestamp: "4 hours ago",
-    applications: 8,
-    category: "TUTORING",
-  },
-  {
-    id: 3,
-    type: "poll",
-    author: {
-      name: "Community Admin",
-      avatar: "/placeholder.svg?height=40&width=40",
-      location: "Lalitpur",
-      isVerified: true,
-    },
-    title: "Should we organize a community cleanup drive this weekend?",
-    content: "Vote to help us decide if we should organize a neighborhood cleanup drive this Saturday morning.",
-    timestamp: "6 hours ago",
-    votes: 45,
-    options: ["Yes, let's do it!", "Maybe next weekend", "Not interested"],
-    endsIn: "2 days",
-  },
-]
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+
+import {
+  fetchFeedItems,
+  createPost,
+  createJob,
+  createPoll,
+  likePost,
+} from "@/lib/feed-api";
+
+import { CreatePostDialog } from "./create-post.dialog";
+import { CreateJobDialog } from "./create-job.dialog";
+import { CreatePollDialog } from "./create-poll.dialog";
+import {
+  createEnhancedVoteHandler,
+  EnhancedJobCard,
+  EnhancedPollCard,
+  EnhancedPostCard,
+  Post,
+} from "./feed-cards";
 
 export function FeedSection() {
+  const { data: session } = useSession();
+  const { toast } = useToast();
+
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const handleVote = createEnhancedVoteHandler(setPosts, toast);
+
+  useEffect(() => {
+    async function loadFeed() {
+      try {
+        const feedItems = await fetchFeedItems();
+        const mappedPosts: Post[] = feedItems.map((item: any) => ({
+          id: item.id,
+          type: item.type,
+          author: {
+            name: item.user?.name || session?.user?.name || "Anonymous",
+            image: item.user?.image || session?.user?.image || null,
+            location: item.user?.location || session?.user?.location || null,
+            isVerified: item.user?.isVerified || false,
+          },
+          content: item.content || item.description || item.question,
+          location: item.location || null,
+          timestamp: new Date(item.createdAt).toLocaleString(),
+          likes: item.type === "post" ? item.likes || 0 : undefined,
+          comments:
+            item.type === "post" ? item.comments?.length || 0 : undefined,
+          views: item.views || 0,
+          title: item.title,
+          budget: item.budget,
+          category: item.category,
+          isUrgent: item.isUrgent,
+          applications:
+            item.type === "job" ? item.applications?.length || 0 : undefined,
+          votes: item.type === "poll" ? item.votes?.length || 0 : undefined,
+          options: item.options,
+          endsIn: item.expiresAt
+            ? new Date(item.expiresAt).toLocaleString()
+            : undefined,
+          isHot: item.isHot,
+          hasVoted: item.hasVoted || false,
+          voteResults: item.voteResults || {},
+          userVote: item.userVote || null,
+        }));
+        setPosts(mappedPosts);
+      } catch {
+        toast({
+          title: "Error",
+          description: "Failed to load community feed.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadFeed();
+  }, [session, toast]);
+
+  // Handlers for creating content (same as before)
+  const handleCreatePost = async (content: string, location?: string) => {
+    try {
+      const newPost = await createPost({ content, location });
+      setPosts((prev) => [
+        {
+          id: newPost.id,
+          type: "post",
+          author: {
+            name: session?.user?.name || "Anonymous",
+            image: session?.user?.image || null,
+            location: session?.user?.location || null,
+            isVerified: session?.user?.isVerified || false,
+          },
+          content: newPost.content,
+          location: newPost.location,
+          timestamp: new Date(newPost.createdAt).toLocaleString(),
+          likes: 0,
+          comments: 0,
+          views: 0,
+        },
+        ...prev,
+      ]);
+      toast({
+        title: "Post created!",
+        description: "Your post has been shared with the community.",
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to create post. Please try again.",
+        variant: "destructive",
+      });
+      throw new Error("Failed to create post");
+    }
+  };
+
+  const handleCreateJob = async (
+    title: string,
+    description: string,
+    category?: string,
+    location?: string
+  ) => {
+    try {
+      const newJob = await createJob({
+        title,
+        description,
+        category,
+        location,
+      });
+      setPosts((prev) => [
+        {
+          id: newJob.id,
+          type: "job",
+          author: {
+            name: session?.user?.name || "Anonymous",
+            image: session?.user?.image || null,
+            location: session?.user?.location || null,
+            isVerified: session?.user?.isVerified || false,
+          },
+          content: newJob.description,
+          location: newJob.location,
+          timestamp: new Date(newJob.createdAt).toLocaleString(),
+          title: newJob.title,
+          category: newJob.category,
+        },
+        ...prev,
+      ]);
+      toast({
+        title: "Job created!",
+        description: "Your job has been posted to the community.",
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to create job. Please try again.",
+        variant: "destructive",
+      });
+      throw new Error("Failed to create job");
+    }
+  };
+
+  const handleCreatePoll = async (
+    question: string,
+    options: string[],
+    expiresAt?: string
+  ) => {
+    try {
+      const newPoll = await createPoll({ question, options, expiresAt });
+      setPosts((prev) => [
+        {
+          id: newPoll.id,
+          type: "poll",
+          author: {
+            name: session?.user?.name || "Anonymous",
+            image: session?.user?.image || null,
+            location: session?.user?.location || null,
+            isVerified: session?.user?.isVerified || false,
+          },
+          content: newPoll.question,
+          timestamp: new Date(newPoll.createdAt).toLocaleString(),
+          options: newPoll.options,
+          votes: 0,
+          views: 0,
+          endsIn: newPoll.expiresAt
+            ? new Date(newPoll.expiresAt).toLocaleString()
+            : undefined,
+          location: session?.user?.location || null,
+          hasVoted: false,
+          voteResults: {},
+        },
+        ...prev,
+      ]);
+      toast({
+        title: "Poll created!",
+        description: "Your poll has been shared with the community.",
+      });
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to create poll. Please try again.",
+        variant: "destructive",
+      });
+      throw new Error("Failed to create poll");
+    }
+  };
+
+  const handleLike = async (postId: string) => {
+    try {
+      await likePost(postId);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to like post.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
-      <Card>
+      <Card className="bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 border-0 shadow-lg">
         <CardHeader>
-          <CardTitle className="text-lg">Quick Actions</CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                What's happening in your community?
+              </CardTitle>
+              <p className="text-muted-foreground mt-1">
+                Share, connect, and grow together
+              </p>
+            </div>
+            <Sparkles className="h-6 w-6 text-purple-500" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Plus className="h-5 w-5" />
-              <span>Create Post</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Briefcase className="h-5 w-5" />
-              <span>Post Job</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex-col gap-2">
-              <Vote className="h-5 w-5" />
-              <span>Create Poll</span>
-            </Button>
+            <CreatePostDialog onCreate={handleCreatePost} />
+            <CreateJobDialog onCreate={handleCreateJob} />
+            <CreatePollDialog onCreate={handleCreatePoll} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Community Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Members</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Open Jobs</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">23</div>
-            <p className="text-xs text-muted-foreground">5 posted today</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Polls</CardTitle>
-            <Vote className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">2 ending soon</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Feed */}
+      {/* Community Feed */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Community Feed</h2>
-        {feedPosts.map((post) => (
-          <Card key={post.id}>
-            <CardHeader>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Community Feed</h2>
+          <Button variant="ghost" size="sm">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {posts.map((post) => (
+          <Card
+            key={post.id}
+            className="hover:shadow-lg transition-all duration-300 border-0 shadow-md"
+          >
+            <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
-                  <Avatar>
-                    <AvatarImage src={post.author.avatar || "/placeholder.svg"} />
-                    <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+                  <Avatar className="ring-2 ring-transparent hover:ring-blue-200 transition-all">
+                    <AvatarImage
+                      src={post.author.image || "/placeholder-user.jpg"}
+                    />
+                    <AvatarFallback>
+                      {post.author.name?.charAt(0) || "U"}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold">{post.author.name}</span>
+                      <span className="font-semibold hover:text-blue-600 cursor-pointer transition-colors">
+                        {post.author.name}
+                      </span>
                       {post.author.isVerified && (
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-blue-100 text-blue-700"
+                        >
+                          <Star className="h-3 w-3 mr-1" />
                           Verified
                         </Badge>
                       )}
                     </div>
                     <div className="flex items-center text-sm text-muted-foreground">
                       <MapPin className="h-3 w-3 mr-1" />
-                      {post.author.location}
+                      {post.author.location || "Unknown"}
                       <span className="mx-2">•</span>
                       <Clock className="h-3 w-3 mr-1" />
                       {post.timestamp}
                     </div>
                   </div>
                 </div>
-                <Badge variant="outline">{post.type === "job" ? "Job" : post.type === "poll" ? "Poll" : "Post"}</Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {post.type === "job" && (
-                <div>
-                  <h3 className="font-semibold text-lg">{(post as any).title}</h3>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                    <span>Budget: NPR {(post as any).budget}</span>
-                    <span>Category: {(post as any).category}</span>
-                  </div>
-                </div>
-              )}
 
+            <CardContent>
+              {post.type === "post" && (
+                <EnhancedPostCard post={post} onLike={handleLike} />
+              )}
+              {post.type === "job" && <EnhancedJobCard post={post} />}
               {post.type === "poll" && (
-                <div>
-                  <h3 className="font-semibold text-lg">{(post as any).title}</h3>
-                  <div className="text-sm text-muted-foreground mt-1">Ends in {(post as any).endsIn}</div>
-                </div>
+                <EnhancedPollCard post={post} onVote={handleVote} />
               )}
 
-              <p className="text-gray-700 dark:text-gray-300">{post.content}</p>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  {post.type === "post" && (
-                    <>
-                      <Button variant="ghost" size="sm">
-                        <Heart className="h-4 w-4 mr-1" />
-                        {(post as any).likes}
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <MessageCircle className="h-4 w-4 mr-1" />
-                        {(post as any).comments}
-                      </Button>
-                    </>
-                  )}
-
-                  {post.type === "job" && (
-                    <Button variant="ghost" size="sm">
-                      <Users className="h-4 w-4 mr-1" />
-                      {(post as any).applications} applications
-                    </Button>
-                  )}
-
-                  {post.type === "poll" && (
-                    <Button variant="ghost" size="sm">
-                      <Vote className="h-4 w-4 mr-1" />
-                      {(post as any).votes} votes
-                    </Button>
-                  )}
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Button variant="ghost" size="sm">
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                  {post.type === "job" && <Button size="sm">Apply Now</Button>}
-                  {post.type === "poll" && <Button size="sm">Vote Now</Button>}
-                </div>
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="hover:bg-gray-50 transition-colors"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
+                </Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {/* Load More Button */}
+      <div className="flex justify-center pt-6">
+        <Button
+          variant="outline"
+          className="hover:shadow-lg transition-all duration-300"
+        >
+          Load More Posts
+          <Loader2 className="h-4 w-4 ml-2" />
+        </Button>
+      </div>
     </div>
-  )
+  );
 }

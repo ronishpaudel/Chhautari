@@ -82,7 +82,7 @@ export function LandingPage() {
                 </span>
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Chhautari
+                Chautari
               </span>
             </div>
 
@@ -122,7 +122,7 @@ export function LandingPage() {
                         <TreeDeciduousIcon className="h-5 w-5 text-white" />
                       </div>
                       <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        Chhautari
+                        Chautari
                       </span>
                     </div>
 
@@ -175,7 +175,7 @@ export function LandingPage() {
           Connected & Thriving
         </h1>
         <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto px-4">
-          Chhautari brings your community together with hyperlocal feeds,
+          Chautari brings your community together with hyperlocal feeds,
           verified micro jobs, neighborhood polls, and real-time connections.
           Build stronger bonds with your neighbors.
         </p>
@@ -284,10 +284,10 @@ export function LandingPage() {
                   <TreeDeciduousIcon className="h-5 w-5" />
                 </span>
               </div>
-              <span className="text-xl font-bold">Chhautari</span>
+              <span className="text-xl font-bold">Chautari</span>
             </div>
             <div className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
-              © 2024 Chhautari. Building stronger communities together.
+              © 2024 Chautari. Building stronger communities together.
             </div>
           </div>
         </div>
