@@ -1,4 +1,4 @@
-import { proxy } from "valtio";
+import { proxy, subscribe } from "valtio";
 
 type PollState = {
   [pollId: string]: {
@@ -13,9 +13,28 @@ type PollState = {
   };
 };
 
-export const pollStore = proxy<PollState>({});
+// --- Load from localStorage if available ---
+const localStorageKey = "poll-store";
 
-// Helper functions for poll store
+const loadInitialState = (): PollState => {
+  try {
+    const saved = localStorage.getItem(localStorageKey);
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.error("Failed to parse poll store from localStorage:", e);
+  }
+  return {};
+};
+
+// --- Create reactive store ---
+export const pollStore = proxy<PollState>(loadInitialState());
+
+// --- Persist to localStorage on change ---
+subscribe(pollStore, () => {
+  localStorage.setItem(localStorageKey, JSON.stringify(pollStore));
+});
+
+// --- Helper functions ---
 export const updatePollInStore = (
   pollId: string,
   data: Partial<PollState[string]>
