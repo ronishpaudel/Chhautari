@@ -185,7 +185,7 @@ const EnhancedPollCard = ({ post, onVote }: EnhancedPollCardProps) => {
   // Component to show voters for an option
   const VoterAvatars = ({ option }: { option: string }) => {
     const voters = currentPollState.votersByOption[option] || [];
-    const maxVisible = 3;
+    const maxVisible = 5;
     const remainingCount = voters.length - maxVisible;
 
     if (voters.length === 0) return null;
@@ -349,17 +349,6 @@ const EnhancedPollCard = ({ post, onVote }: EnhancedPollCardProps) => {
                   Hide Results
                 </Button>
               )}
-              {!showResults && currentPollState.totalVotes > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowResults(true)}
-                  className="text-purple-600 hover:text-purple-700"
-                >
-                  <Eye className="h-4 w-4 mr-1" />
-                  View Results
-                </Button>
-              )}
             </>
           )}
         </div>
@@ -370,7 +359,8 @@ const EnhancedPollCard = ({ post, onVote }: EnhancedPollCardProps) => {
     </div>
   );
 };
-const createEnhancedVoteHandler = (
+
+export const createEnhancedVoteHandler = (
   setPosts: React.Dispatch<React.SetStateAction<Post[]>>,
   toast: any
 ) => {
@@ -566,9 +556,4 @@ const EnhancedPostCard = ({
   );
 };
 
-export {
-  EnhancedJobCard,
-  EnhancedPostCard,
-  EnhancedPollCard,
-  createEnhancedVoteHandler,
-};
+export { EnhancedJobCard, EnhancedPostCard, EnhancedPollCard };

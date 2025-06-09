@@ -339,9 +339,11 @@ export function FeedSection() {
                 <EnhancedPostCard post={post} onLike={handleLike} />
               )}
               {post.type === "job" && <EnhancedJobCard post={post} />}
-              {post.type === "poll" && (
-                <EnhancedPollCard post={post} onVote={handleVote} />
-              )}
+              {post.type === "poll" &&
+                (() => {
+                  console.log("Rendering EnhancedPollCard:", post);
+                  return <EnhancedPollCard post={post} onVote={handleVote} />;
+                })()}
 
               <div className="mt-4 pt-4 border-t">
                 <Button
