@@ -39,3 +39,32 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function GET() {
+  try {
+    const posts = await prisma.post.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            location: true,
+            isVerified: true,
+          },
+        },
+        comments: true,
+      },
+    });
+
+    // Map or format posts if needed before returning
+    return NextResponse.json(posts);
+  } catch (error) {
+    console.error("GET /api/post error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch posts" },
+      { status: 500 }
+    );
+  }
+}

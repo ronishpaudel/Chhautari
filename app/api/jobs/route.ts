@@ -3,7 +3,53 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-// POST /api/jobs: Create a new job
+export async function GET() {
+  try {
+    const jobs = await prisma.job.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            location: true,
+            isVerified: true,
+          },
+        },
+        applications: {
+          select: { id: true },
+        },
+      },
+      take: 20, // limit to 20 jobs, adjust as needed
+    });
+
+    // Map jobs to a cleaner shape for frontend
+    const formattedJobs = jobs.map((job) => ({
+      id: job.id,
+      title: job.title,
+      description: job.description,
+      category: job.category,
+      location: job.location,
+      isUrgent: job.isVerified === false, // Or your own urgent logic
+      applications: job.applications.length,
+      views: 0, // Add real views logic if you have it
+      postedBy: {
+        name: job.user.name,
+        avatar: job.user.image || "/placeholder.svg",
+        isVerified: job.user.isVerified,
+      },
+    }));
+
+    return NextResponse.json(formattedJobs);
+  } catch (error) {
+    console.error("GET /api/jobs error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch jobs" },
+      { status: 500 }
+    );
+  }
+}
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.email) {
