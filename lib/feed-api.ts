@@ -57,3 +57,21 @@ export async function PollVote(pollId: string, option: string) {
   });
   return res.json();
 }
+
+export async function fetchJobs() {
+  const res = await fetch("/api/jobs", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch jobs");
+  return res.json();
+}
+
+export async function fetchPost() {
+  const res = await fetch("/api/post", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch feed items");
+  return res.json();
+}
+
+export async function fetchPoll() {
+  const res = await fetch("/api/polls", { cache: "no-store" });
+  if (!res.ok) throw new Error("Failed to fetch feed items");
+  return res.json();
+}
