@@ -115,20 +115,6 @@ export function CreateJobDialog({
           onChange={(e) => setLocation(e.target.value)}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="budget">Budget (Optional)</Label>
-        <Input
-          id="budget"
-          type="number"
-          min={0}
-          placeholder="Enter budget in NPR"
-          value={budget}
-          onChange={(e) => {
-            const val = e.target.value;
-            setBudget(val === "" ? "" : Number(val));
-          }}
-        />
-      </div>
     </ModalDialog>
   );
 }

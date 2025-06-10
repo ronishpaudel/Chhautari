@@ -430,7 +430,7 @@ const EnhancedJobCard = ({ post }: { post: Post }) => {
           Job Opportunity
         </h3>
         {post.isUrgent && (
-          <Badge variant="destructive" className="animate-pulse">
+          <Badge variant="destructive" className="">
             Urgent Hiring
           </Badge>
         )}
@@ -491,15 +491,14 @@ const EnhancedPostCard = ({
   post,
   onLike,
 }: {
-  post: Post;
-  onLike: (postId: string) => void;
+  post: Post; // define Post type or import it
+  onLike?: (postId: string) => void;
 }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes || 0);
 
   const handleLike = () => {
     if (!isLiked) {
-      onLike(post.id);
       setIsLiked(true);
       setLikeCount((prev) => prev + 1);
     }

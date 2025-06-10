@@ -60,7 +60,7 @@ const menuItems = [
   },
   {
     title: "Polls & Voting",
-    url: "/dashboard/polls",
+    url: "/dashboard/poll",
     icon: Vote,
   },
   {
