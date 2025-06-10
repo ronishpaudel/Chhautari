@@ -167,6 +167,7 @@ export function FeedSection() {
             name: session?.user?.name || "Anonymous",
             image: session?.user?.image || null,
             location: session?.user?.location || null,
+
             isVerified: session?.user?.isVerified || false,
           },
           content: newJob.description,
