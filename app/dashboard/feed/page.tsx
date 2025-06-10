@@ -13,15 +13,7 @@ export default async function FeedPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Community Feed</h1>
-          <p className="text-muted-foreground">
-            Stay updated with your {session.user.location} neighborhood
-          </p>
-        </div>
-        <CommunityFeed />
-      </div>
+      <CommunityFeed />
     </DashboardLayout>
   );
 }
