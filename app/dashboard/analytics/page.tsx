@@ -11,14 +11,6 @@ export default async function AnalyticsPage() {
     redirect("/auth/signin");
   }
 
-  // // Check if user has admin/moderator role
-  // if (
-  //   session.upsrole !== "ADMIN" &&
-  //   session.user.role !== "SERVICE_PROVIDER"
-  // ) {
-  //   redirect("/dashboard");
-  // }
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
