@@ -204,7 +204,7 @@ export default function SignUpPage() {
         callbackUrl: "/dashboard",
       });
 
-      console.log("Google signIn result:", result); // Debugging
+      console.log("Google signIn result:", result);
       if (result?.error) {
         toast({
           title: "Error",
